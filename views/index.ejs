@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= topic %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <h1>🧠 <%= topic %></h1>
+  <p>This page detects whether the latest request came from a human browser or an AI client.</p>
+
+  <h2>Latest Request</h2>
+  <% if (log) { %>
+    <table>
+      <tr><th>Time</th><td><%= log.time %></td></tr>
+      <tr><th>Method</th><td><%= log.method %></td></tr>
+      <tr><th>URL</th><td><%= log.url %></td></tr>
+      <tr><th>AI Source</th><td><%= log.aiSource %></td></tr>
+    </table>
+
+    <h3>Request Headers</h3>
+    <pre><%= JSON.stringify(log.headers, null, 2) %></pre>
+  <% } else { %>
+    <p>No requests logged yet. Reload the page to see the first request.</p>
+  <% } %>
+</body>
+</html>
+
