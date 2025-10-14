@@ -1,16 +1,17 @@
 const express = require("express");
 const path = require("path");
+const { Resend } = require("resend");
 
 const app = express();
+const resend = new Resend(process.env.RESEND_API_KEY); // no username/password needed
+
+app.use(express.json());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(express.json());
 
-// AI detection logic
 function detectAI(headers) {
   const userAgent = headers["user-agent"]?.toLowerCase() || "";
-
   if (userAgent.includes("chatgpt")) return "ChatGPT";
   if (userAgent.includes("openai")) return "OpenAI";
   if (userAgent.includes("bard")) return "Google Bard";
@@ -21,10 +22,33 @@ function detectAI(headers) {
   return "Human / Unknown";
 }
 
-// 🟢 Store only the latest request
 let log = null;
 
-app.use((req, res, next) => {
+async function sendHeaderEmail(log) {
+  try {
+    await resend.emails.send({
+      from: "AI Detector <ai-detector@yourdomain.com>",
+      to: "shreyash.sarnaik@hotmail.com",
+      subject: `🧠 New Request Logged: ${log.aiSource}`,
+      text: `
+New Request Detected
+---------------------
+Time: ${log.time}
+Method: ${log.method}
+URL: ${log.url}
+AI Source: ${log.aiSource}
+
+Headers:
+${JSON.stringify(log.headers, null, 2)}
+      `,
+    });
+    console.log("📨 Email sent via Resend!");
+  } catch (error) {
+    console.error("❌ Error sending email:", error);
+  }
+}
+
+app.use(async (req, res, next) => {
   const aiSource = detectAI(req.headers);
 
   log = {
@@ -35,6 +59,7 @@ app.use((req, res, next) => {
     time: new Date().toLocaleString(),
   };
 
+  sendHeaderEmail(log);
   next();
 });
 
@@ -46,4 +71,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
